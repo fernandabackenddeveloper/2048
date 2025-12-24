@@ -94,6 +94,29 @@ class StateStore:
         path.write_text(content, encoding="utf-8")
         return path
 
+    def append_fixer_log(self, run_dir: Path, payload: Dict[str, Any]) -> None:
+        fixer_log = run_dir / "logs" / "fixer.jsonl"
+        fixer_log.write_text(
+            (fixer_log.read_text(encoding="utf-8") if fixer_log.exists() else "")
+            + json.dumps(payload)
+            + "\n",
+            encoding="utf-8",
+        )
+
+    def create_incident(self, run_dir: Path, title: str, body: str) -> Path:
+        incidents = list((run_dir / "incidents").glob("INC-*.md"))
+        next_id = len(incidents) + 1
+        path = run_dir / "incidents" / f"INC-{next_id:04d}.md"
+        content = "\n".join(
+            [
+                f"# {title}",
+                "",
+                body,
+            ]
+        )
+        path.write_text(content + "\n", encoding="utf-8")
+        return path
+
     def _write_json(self, path: Path, payload: Dict[str, Any]) -> None:
         path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 

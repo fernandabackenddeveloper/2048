@@ -22,6 +22,14 @@ python -m orchestrator.main \
   --dry-run
 ```
 
+### Real run (executes stack checks)
+```bash
+python -m orchestrator.main \
+  --prompt "Build a modular orchestrator for automated projects" \
+  --project demo-project \
+  --stack web_fullstack
+```
+
 Artifacts appear under `runs/<project>`:
 - `inputs/input_prompt.md` – captured prompt
 - `plan.json` – milestones/tasks

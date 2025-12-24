@@ -11,6 +11,7 @@ from agent_factory.orchestrator.state_store import StateStore
 from agent_factory.orchestrator.task_graph import Task, build_default_tasks
 from agent_factory.agents.chief_planner import ChiefPlanner
 from agent_factory.agents.architect import Architect
+from agent_factory.agents.scope_guard import ScopeGuard
 from agent_factory.agents.scaffolder import Scaffolder
 from agent_factory.agents.qa_agent import QAAgent
 from agent_factory.agents.docs_agent import DocsAgent
@@ -57,6 +58,7 @@ def _build_agents(
     config: Dict,
     dry_run: bool,
 ) -> Dict[str, callable]:
+    scope_guard = ScopeGuard(run_dir, state_store)
     chief_planner = ChiefPlanner(run_dir, stack, state_store)
     architect = Architect(run_dir, stack, state_store)
     scaffolder = Scaffolder(run_dir, stack, state_store, config=config, dry_run=dry_run)
@@ -65,6 +67,7 @@ def _build_agents(
     release_agent = ReleaseAgent(run_dir, stack, state_store, dry_run=dry_run)
 
     return {
+        "scope_guard": scope_guard.validate,
         "ingest": chief_planner.ingest,
         "plan": chief_planner.plan,
         "architecture": architect.compose_adr,

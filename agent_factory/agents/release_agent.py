@@ -23,8 +23,11 @@ class ReleaseAgent:
             "reports/QUICKSTART.md",
             "adr/ADR-0001-architecture.md",
         ]
-        report_md = self._build_markdown(artifacts)
-        report_json = self._build_json(artifacts)
+        state = self.state_store.read_state(self.run_dir)
+        results = state.get("test_results", [])
+        overall_status = self._compute_status(results)
+        report_md = self._build_markdown(artifacts, overall_status)
+        report_json = self._build_json(artifacts, overall_status, results)
         report_path = self.state_store.save_report(self.run_dir, "final_report.md", report_md)
         json_path = self.state_store.save_report(
             self.run_dir,
@@ -39,21 +42,33 @@ class ReleaseAgent:
         state["current_gate"] = "completed"
         self.state_store.save_state(self.run_dir, state)
 
-    def _build_markdown(self, artifacts: List[str]) -> str:
+    def _build_markdown(self, artifacts: List[str], status: str) -> str:
         lines = [
             "# Final Report",
             "",
             f"**Stack:** {self.stack}",
             f"**Mode:** {'dry-run' if self.dry_run else 'execute'}",
+            f"**Status:** {status}",
             "",
             "## Artifacts",
         ]
         lines.extend([f"- {item}" for item in artifacts])
         return "\n".join(lines) + "\n"
 
-    def _build_json(self, artifacts: List[str]) -> Dict:
+    def _build_json(self, artifacts: List[str], status: str, results: List[Dict]) -> Dict:
         return {
             "stack": self.stack,
             "mode": "dry-run" if self.dry_run else "execute",
+            "status": status,
+            "tests": results,
             "artifacts": artifacts,
         }
+
+    def _compute_status(self, results: List[Dict]) -> str:
+        if self.dry_run:
+            return "dry-run"
+        if not results:
+            return "unknown"
+        if all(result.get("status") == "pass" for result in results):
+            return "success"
+        return "failed"

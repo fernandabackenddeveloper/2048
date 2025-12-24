@@ -1,7 +1,5 @@
-gates:
-  - name: lint
-    description: "Run npm lint"
-  - name: test
-    description: "Execute npm test"
-  - name: smoke
-    description: "Start dev server in CI-friendly mode"
+checks:
+  - name: pytest
+    description: "Run pytest suite"
+    command: "pytest -q"
+    max_attempts: 6
