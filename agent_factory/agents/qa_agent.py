@@ -20,6 +20,10 @@ class QAAgent:
         self.dry_run = dry_run
         self.runner = TestRunner()
         self.stack_root = Path(self.state_store.read_state(run_dir)["config"].get("stack_root", "stacks"))
+        self.stack_rules = self._load_stack_rules()
+        allowlist = self.stack_rules.get("allowlist", [])
+        if allowlist:
+            self.runner.runner.allowlist = list(allowlist)
 
     def run_suite(self) -> None:
         checks = self._load_checks()
@@ -54,6 +58,13 @@ class QAAgent:
             return []
         data = yaml.safe_load(checks_path.read_text(encoding="utf-8")) or {}
         return data.get("checks", [])
+
+    def _load_stack_rules(self) -> Dict:
+        rules_path = self.stack_root / self.stack / "rules.yaml"
+        if not rules_path.exists():
+            return {}
+        data = yaml.safe_load(rules_path.read_text(encoding="utf-8")) or {}
+        return data
 
     def _run_check(self, check: Dict) -> Dict:
         command = check["command"]
