@@ -9,7 +9,14 @@ def utc_now() -> str:
     return datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
 
 
-def _task(tid: str, desc: str, expected: str, dod: List[str], owner: str) -> Dict[str, Any]:
+def _task(
+    tid: str,
+    desc: str,
+    expected: str,
+    dod: List[str],
+    owner: str,
+    depends_on: List[str] | None = None,
+) -> Dict[str, Any]:
     return {
         "id": tid,
         "description": desc,
@@ -17,6 +24,7 @@ def _task(tid: str, desc: str, expected: str, dod: List[str], owner: str) -> Dic
         "dod": dod,
         "owner": owner,
         "status": "todo",
+        "depends_on": depends_on or [],
         "touch_hints": infer_touch_hints(desc),
     }
 
@@ -74,14 +82,14 @@ def generate_plan(prompt_text: str, project: str, stack: str) -> Dict[str, Any]:
                     "title": "Repo scaffold",
                     "tasks": [
                         _task(
-                            "T1",
+                            "M1_T1",
                             "Create baseline scaffold in runs/<project>/workspace from stack template",
                             "workspace populated with template files",
                             ["workspace exists", "template copied"],
                             "scaffolder",
                         ),
                         _task(
-                            "T2",
+                            "M1_T2",
                             "Ensure CI config exists and is valid",
                             "ci/github_actions.yml present",
                             ["CI file exists", "CI references pytest"],
@@ -104,18 +112,20 @@ def generate_plan(prompt_text: str, project: str, stack: str) -> Dict[str, Any]:
                     "title": "Quality gates",
                     "tasks": [
                         _task(
-                            "T1",
+                            "M2_T1",
                             "Run stack gates (build/lint/test) and capture GateResults",
                             "state.json contains gate results",
                             ["GateResults recorded", "Failing gates include stdout/stderr"],
                             "qa",
+                            depends_on=["M1_T1", "M1_T2"],
                         ),
                         _task(
-                            "T2",
+                            "M2_T2",
                             "On failures, apply minimal patches up to max retries and log attempts",
                             "fixer.jsonl contains fix attempts; incidents on exhaustion",
                             ["Max retries enforced", "Incident created on exhaustion"],
                             "fixer",
+                            depends_on=["M1_T1", "M1_T2"],
                         ),
                     ],
                 }
@@ -134,18 +144,20 @@ def generate_plan(prompt_text: str, project: str, stack: str) -> Dict[str, Any]:
                     "title": "Documentation and reporting",
                     "tasks": [
                         _task(
-                            "T1",
+                            "M3_T1",
                             "Write docs/architecture.md + optional ui style guide placeholders",
                             "docs created",
                             ["docs/architecture.md exists"],
                             "docs",
+                            depends_on=["M1_T1", "M1_T2"],
                         ),
                         _task(
-                            "T2",
+                            "M3_T2",
                             "Write final_report.md and final_report.json",
                             "reports generated",
                             ["final_report.md exists", "final_report.json exists"],
                             "release",
+                            depends_on=["M2_T1", "M2_T2", "M3_T1"],
                         ),
                     ],
                 }
