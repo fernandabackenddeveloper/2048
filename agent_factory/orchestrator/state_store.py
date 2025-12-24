@@ -129,3 +129,13 @@ class StateStore:
             "config": config,
         }
         self._write_json(run_dir / "env_snapshot.json", snapshot)
+
+    def append_jsonl(self, run_dir: Path, rel_path: str, payload: Dict[str, Any]) -> None:
+        target = run_dir / rel_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        existing = target.read_text(encoding="utf-8") if target.exists() else ""
+        target.write_text(existing + json.dumps(payload) + "\n", encoding="utf-8")
+
+    @staticmethod
+    def utc_now() -> str:
+        return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
