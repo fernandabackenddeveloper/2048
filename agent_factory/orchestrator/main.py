@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import json
+import sys
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 from agent_factory.orchestrator.router import TaskRouter
 from agent_factory.orchestrator.state_store import StateStore
@@ -15,14 +17,30 @@ from agent_factory.agents.docs_agent import DocsAgent
 from agent_factory.agents.release_agent import ReleaseAgent
 
 
-def run_pipeline(prompt: str, project_name: str, stack: str = "web_fullstack") -> Path:
-    state_store = StateStore(base_path=Path("agent_factory") / "runs")
-    run_dir = state_store.init_run(project_name, prompt, stack)
+def run_pipeline(
+    prompt: str,
+    project_name: str,
+    stack: Optional[str] = None,
+    *,
+    config_path: Optional[Path] = None,
+    dry_run: bool = False,
+) -> Path:
+    config = load_config(config_path)
+    resolved_stack = stack or config.get("default_stack", "web_fullstack")
+    run_root = Path(config.get("run_root", "runs"))
+
+    state_store = StateStore(base_path=run_root)
+    run_dir = state_store.init_run(
+        project_name=project_name,
+        prompt=prompt,
+        stack=resolved_stack,
+        config=config,
+    )
 
     tasks = build_default_tasks(project_name)
     state_store.save_plan(run_dir, tasks)
 
-    agents = _build_agents(run_dir, stack, state_store)
+    agents = _build_agents(run_dir, resolved_stack, state_store, config, dry_run)
     router = TaskRouter(tasks)
 
     def _runner(task: Task) -> None:
@@ -32,13 +50,19 @@ def run_pipeline(prompt: str, project_name: str, stack: str = "web_fullstack") -
     return run_dir
 
 
-def _build_agents(run_dir: Path, stack: str, state_store: StateStore) -> Dict[str, callable]:
+def _build_agents(
+    run_dir: Path,
+    stack: str,
+    state_store: StateStore,
+    config: Dict,
+    dry_run: bool,
+) -> Dict[str, callable]:
     chief_planner = ChiefPlanner(run_dir, stack, state_store)
     architect = Architect(run_dir, stack, state_store)
-    scaffolder = Scaffolder(run_dir, stack, state_store)
-    qa_agent = QAAgent(run_dir, stack, state_store)
+    scaffolder = Scaffolder(run_dir, stack, state_store, config=config, dry_run=dry_run)
+    qa_agent = QAAgent(run_dir, stack, state_store, dry_run=dry_run)
     docs_agent = DocsAgent(run_dir, stack, state_store)
-    release_agent = ReleaseAgent(run_dir, stack, state_store)
+    release_agent = ReleaseAgent(run_dir, stack, state_store, dry_run=dry_run)
 
     return {
         "ingest": chief_planner.ingest,
@@ -60,6 +84,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--stack", type=str, default="web_fullstack", help="Stack plugin to use (default: web_fullstack)."
     )
+    parser.add_argument("--config", type=Path, help="Path to a custom config.yaml")
+    parser.add_argument("--dry-run", action="store_true", help="Run without executing external commands.")
     return parser.parse_args()
 
 
@@ -69,9 +95,36 @@ def main() -> None:
         prompt = args.prompt_file.read_text(encoding="utf-8")
     else:
         prompt = args.prompt
-    run_dir = run_pipeline(prompt=prompt, project_name=args.project, stack=args.stack)
-    print(f"Run completed. Artifacts stored in: {run_dir}")
+    run_dir = run_pipeline(
+        prompt=prompt,
+        project_name=args.project,
+        stack=args.stack,
+        config_path=args.config,
+        dry_run=args.dry_run,
+    )
+    print(json.dumps({"run_dir": str(run_dir), "status": "completed"}))
+    print("Done")
 
 
 if __name__ == "__main__":
     main()
+
+
+def load_config(config_path: Optional[Path] = None) -> Dict:
+    """Load configuration from provided path or packaged default."""
+    search_paths = []
+    if config_path:
+        search_paths.append(config_path)
+    search_paths.append(Path("config.yaml"))
+    search_paths.append(Path("agent_factory") / "orchestrator" / "config.yaml")
+
+    for path in search_paths:
+        if path.exists():
+            return json.loads(path.read_text()) if path.suffix == ".json" else _load_yaml(path)
+    return {}
+
+
+def _load_yaml(path: Path) -> Dict:
+    import yaml  # type: ignore
+
+    return yaml.safe_load(path.read_text(encoding="utf-8")) or {}

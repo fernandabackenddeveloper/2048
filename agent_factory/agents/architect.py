@@ -18,7 +18,13 @@ class Architect:
             "Adopt Python orchestrator with stack plugins; run in sandboxed shell; "
             "record tasks and decisions in run directory."
         )
-        adr_path = self.state_store.add_decision(self.run_dir, title, context, decision)
+        adr_path = self.state_store.add_decision(
+            self.run_dir,
+            title,
+            context,
+            decision,
+            slug="architecture",
+        )
         self.state_store.append_log(self.run_dir, f"ADR created at {adr_path}")
         state = self.state_store.read_state(self.run_dir)
         state["current_gate"] = "scaffold"

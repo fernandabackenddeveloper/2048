@@ -5,6 +5,8 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
+import platform
+import sys
 
 from agent_factory.orchestrator.task_graph import Task
 
@@ -16,7 +18,7 @@ class StateStore:
         self.base_path = base_path
         self.base_path.mkdir(parents=True, exist_ok=True)
 
-    def init_run(self, project_name: str, prompt: str, stack: str) -> Path:
+    def init_run(self, project_name: str, prompt: str, stack: str, config: Dict[str, Any]) -> Path:
         run_dir = self.base_path / project_name
         (run_dir / "logs").mkdir(parents=True, exist_ok=True)
         (run_dir / "reports").mkdir(parents=True, exist_ok=True)
@@ -35,8 +37,10 @@ class StateStore:
             "tasks": [],
             "test_results": [],
             "decisions": [],
+            "config": config,
         }
         self._write_json(run_dir / "state.json", state)
+        self._write_env_snapshot(run_dir, stack, config)
         return run_dir
 
     def save_plan(self, run_dir: Path, tasks: List[Task]) -> Path:
@@ -68,9 +72,9 @@ class StateStore:
             return json.loads(state_path.read_text(encoding="utf-8"))
         raise FileNotFoundError(state_path)
 
-    def add_decision(self, run_dir: Path, title: str, context: str, decision: str) -> Path:
+    def add_decision(self, run_dir: Path, title: str, context: str, decision: str, slug: str = "architecture") -> Path:
         adr_index = len(list((run_dir / "adr").glob("ADR-*.md"))) + 1
-        path = run_dir / "adr" / f"ADR-{adr_index:04d}.md"
+        path = run_dir / "adr" / f"ADR-{adr_index:04d}-{slug}.md"
         content = "\n".join(
             [
                 f"# {title}",
@@ -92,3 +96,13 @@ class StateStore:
 
     def _write_json(self, path: Path, payload: Dict[str, Any]) -> None:
         path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+    def _write_env_snapshot(self, run_dir: Path, stack: str, config: Dict[str, Any]) -> None:
+        snapshot = {
+            "python_version": sys.version,
+            "platform": platform.platform(),
+            "cwd": str(Path.cwd()),
+            "stack": stack,
+            "config": config,
+        }
+        self._write_json(run_dir / "env_snapshot.json", snapshot)

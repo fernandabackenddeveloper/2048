@@ -1,5 +1,7 @@
 model_provider: "openai-compatible"
 default_stack: "web_fullstack"
+run_root: "runs"
+stack_root: "stacks"
 sandbox:
   allow_commands:
     - python
@@ -7,7 +9,5 @@ sandbox:
     - node
     - npm
     - git
-run_root: "runs"
-stack_root: "stacks"
 logging:
   level: "INFO"

@@ -15,21 +15,24 @@ pip install -e .[dev]
 
 ## Running the pipeline
 ```bash
-python -m agent_factory.orchestrator.main \
+python -m orchestrator.main \
   --prompt "Build a modular orchestrator for automated projects" \
   --project demo-project \
-  --stack web_fullstack
+  --stack web_fullstack \
+  --dry-run
 ```
 
-Artifacts appear under `agent_factory/runs/<project>`:
+Artifacts appear under `runs/<project>`:
 - `inputs/input_prompt.md` – captured prompt
 - `plan.json` – milestones/tasks
 - `state.json` – pipeline gate state
-- `adr/ADR-0001.md` – stack/architecture decision
+- `env_snapshot.json` – environment and config snapshot
+- `adr/ADR-0001-architecture.md` – stack/architecture decision
 - `scaffold/summary.json` – stack commands/templates summary
 - `reports/qa_report.json` – placeholder QA output
 - `reports/QUICKSTART.md` – how to rerun
 - `reports/final_report.md` – delivery summary
+- `reports/final_report.json` – delivery summary (JSON)
 
 ## Running tests
 ```bash
@@ -37,5 +40,5 @@ pytest
 ```
 
 ## Extending
-- Add stack plugins under `agent_factory/stacks/<stack_name>/` with `rules.yaml` and `checks.yaml`.
+- Add stack plugins under `stacks/<stack_name>/` with `rules.yaml` and `checks.yaml`.
 - Extend agents in `agent_factory/agents/` to add linting, templating, or CI hooks.
