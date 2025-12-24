@@ -1,0 +1,124 @@
+{
+  "agents": {
+    "core_orchestrator_fc5f601a": {
+      "class": "CoreOrchestratorAgent",
+      "module_path": "agent_factory.agents.generated.core_orchestrator_agent",
+      "domain": "core",
+      "module": "orchestrator",
+      "tags": [
+        "core",
+        "orchestrator"
+      ],
+      "docker_image": "agent-factory/runner-web_fullstack:0.1.0",
+      "boundaries": [
+        "core/",
+        "orchestrator/",
+        "docs/",
+        "tests/"
+      ],
+      "rubric": "docs/generated_rubrics/core/orchestrator.md",
+      "prompt": "orchestrator/llm/prompts/generated/core/orchestrator/system.txt",
+      "policy": "stacks/web_fullstack/generated_policies/core_orchestrator.yaml"
+    },
+    "core_tools_607797c0": {
+      "class": "CoreToolsAgent",
+      "module_path": "agent_factory.agents.generated.core_tools_agent",
+      "domain": "core",
+      "module": "tools",
+      "tags": [
+        "core",
+        "tools"
+      ],
+      "docker_image": "agent-factory/runner-web_fullstack:0.1.0",
+      "boundaries": [
+        "core/",
+        "tools/",
+        "docs/",
+        "tests/"
+      ],
+      "rubric": "docs/generated_rubrics/core/tools.md",
+      "prompt": "orchestrator/llm/prompts/generated/core/tools/system.txt",
+      "policy": "stacks/web_fullstack/generated_policies/core_tools.yaml"
+    },
+    "core_qa_e8955136": {
+      "class": "CoreQaAgent",
+      "module_path": "agent_factory.agents.generated.core_qa_agent",
+      "domain": "core",
+      "module": "qa",
+      "tags": [
+        "core",
+        "qa"
+      ],
+      "docker_image": "agent-factory/runner-web_fullstack:0.1.0",
+      "boundaries": [
+        "core/",
+        "qa/",
+        "docs/",
+        "tests/"
+      ],
+      "rubric": "docs/generated_rubrics/core/qa.md",
+      "prompt": "orchestrator/llm/prompts/generated/core/qa/system.txt",
+      "policy": "stacks/web_fullstack/generated_policies/core_qa.yaml"
+    },
+    "core_plugin_system_20c795a6": {
+      "class": "CorePluginSystemAgent",
+      "module_path": "agent_factory.agents.generated.core_plugin_system_agent",
+      "domain": "core",
+      "module": "plugin_system",
+      "tags": [
+        "core",
+        "plugin_system"
+      ],
+      "docker_image": "agent-factory/runner-web_fullstack:0.1.0",
+      "boundaries": [
+        "core/",
+        "plugin_system/",
+        "docs/",
+        "tests/"
+      ],
+      "rubric": "docs/generated_rubrics/core/plugin_system.md",
+      "prompt": "orchestrator/llm/prompts/generated/core/plugin_system/system.txt",
+      "policy": "stacks/web_fullstack/generated_policies/core_plugin_system.yaml"
+    },
+    "ui_dashboard_babe567a": {
+      "class": "UiDashboardAgent",
+      "module_path": "agent_factory.agents.generated.ui_dashboard_agent",
+      "domain": "ui",
+      "module": "dashboard",
+      "tags": [
+        "ui",
+        "dashboard"
+      ],
+      "docker_image": "agent-factory/runner-web_fullstack:0.1.0",
+      "boundaries": [
+        "ui/",
+        "dashboard/",
+        "docs/",
+        "tests/"
+      ],
+      "rubric": "docs/generated_rubrics/ui/dashboard.md",
+      "prompt": "orchestrator/llm/prompts/generated/ui/dashboard/system.txt",
+      "policy": "stacks/web_fullstack/generated_policies/ui_dashboard.yaml"
+    },
+    "release_publisher_930024fd": {
+      "class": "ReleasePublisherAgent",
+      "module_path": "agent_factory.agents.generated.release_publisher_agent",
+      "domain": "release",
+      "module": "publisher",
+      "tags": [
+        "release",
+        "publisher"
+      ],
+      "docker_image": "agent-factory/runner-web_fullstack:0.1.0",
+      "boundaries": [
+        "release/",
+        "publisher/",
+        "docs/",
+        "tests/"
+      ],
+      "rubric": "docs/generated_rubrics/release/publisher.md",
+      "prompt": "orchestrator/llm/prompts/generated/release/publisher/system.txt",
+      "policy": "stacks/web_fullstack/generated_policies/release_publisher.yaml"
+    }
+  }
+}

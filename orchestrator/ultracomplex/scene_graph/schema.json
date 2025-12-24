@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "required": ["node_types", "edges", "invariants"],
+  "properties": {
+    "node_types": { "type": "array", "items": { "type": "string" } },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "to", "type"],
+        "properties": {
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "type": { "type": "string" }
+        }
+      }
+    },
+    "invariants": { "type": "array", "items": { "type": "string" } }
+  }
+}

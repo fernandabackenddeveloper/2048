@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["id", "title", "source_type", "path", "sha256", "tags", "created_at"],
+  "properties": {
+    "id": { "type": "string" },
+    "title": { "type": "string" },
+    "source_type": { "type": "string", "enum": ["local_file", "note", "repo_file", "webpage", "snippet"] },
+    "path": { "type": "string" },
+    "sha256": { "type": "string" },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "created_at": { "type": "string" },
+    "updated_at": { "type": "string" },
+    "meta": { "type": "object" }
+  }
+}

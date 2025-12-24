@@ -1,0 +1,22 @@
+stack: godot_desktop
+commands:
+  - godot
+  - python
+allowlist:
+  - python
+  - pytest
+  - git
+  - rg
+  - gh
+  - gitleaks
+  - syft
+  - trivy
+  - docker
+docker_runner:
+  image: "agent-factory/runner-godot_desktop:0.1.0"
+templates:
+  - template/project.godot
+lint:
+  - godot --headless --check-only
+tests:
+  - python -m pytest

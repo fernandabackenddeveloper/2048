@@ -1,0 +1,26 @@
+{
+  "type": "object",
+  "required": ["name", "states", "initial_state", "transitions"],
+  "properties": {
+    "name": { "type": "string" },
+    "initial_state": { "type": "string" },
+    "states": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "transitions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "event", "to"],
+        "properties": {
+          "from": { "type": "string" },
+          "event": { "type": "string" },
+          "to": { "type": "string" },
+          "guard": { "type": "string" },
+          "effects": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

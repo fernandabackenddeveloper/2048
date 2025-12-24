@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["project", "vision", "personas", "use_cases", "non_goals", "requirements", "success_metrics", "milestones"],
+  "properties": {
+    "project": { "type": "string" },
+    "vision": { "type": "string" },
+    "personas": {
+      "type": "array",
+      "items": { "type": "object", "required": ["name", "goals"], "properties": {
+        "name": { "type": "string" },
+        "goals": { "type": "array", "items": { "type": "string" } }
+      }}
+    },
+    "use_cases": { "type": "array", "items": { "type": "string" } },
+    "non_goals": { "type": "array", "items": { "type": "string" } },
+    "requirements": {
+      "type": "array",
+      "items": { "type": "object", "required": ["id", "type", "text"], "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["functional", "non_functional"] },
+        "text": { "type": "string" }
+      }}
+    },
+    "success_metrics": { "type": "array", "items": { "type": "string" } },
+    "milestones": {
+      "type": "array",
+      "items": { "type": "object", "required": ["id", "name", "definition_of_done"], "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "definition_of_done": { "type": "array", "items": { "type": "string" } }
+      }}
+    }
+  }
+}

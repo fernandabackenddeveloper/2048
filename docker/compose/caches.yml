@@ -1,0 +1,13 @@
+services:
+  runner:
+    image: agent-factory/runner-web_fullstack:0.1.0
+    volumes:
+      - agent_factory_pip_cache:/cache/pip
+      - agent_factory_trivy_cache:/cache/trivy
+      - agent_factory_gh_cache:/cache/gh
+      - agent_factory_xdg_cache:/cache/xdg
+volumes:
+  agent_factory_pip_cache:
+  agent_factory_trivy_cache:
+  agent_factory_gh_cache:
+  agent_factory_xdg_cache:
