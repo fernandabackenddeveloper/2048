@@ -21,17 +21,10 @@ def build_default_tasks(project_name: str) -> List[Task]:
     """Create a minimal, deterministic backlog."""
     return [
         Task(
-            id="scope_guard",
-            description="Validate prompt scope and preconditions",
-            owner="Scope Guard",
-            expected_output="Scope validation recorded",
-        ),
-        Task(
             id="ingest",
             description=f"Ingest prompt for {project_name}",
             owner="Chief Planner",
             expected_output="input_prompt.md saved",
-            depends_on=["scope_guard"],
         ),
         Task(
             id="plan",
@@ -41,11 +34,18 @@ def build_default_tasks(project_name: str) -> List[Task]:
             depends_on=["ingest"],
         ),
         Task(
+            id="scope_guard",
+            description="Validate scope for generated plan",
+            owner="Scope Guard",
+            expected_output="Scope validation recorded",
+            depends_on=["plan"],
+        ),
+        Task(
             id="architecture",
             description="Draft initial ADR and architecture notes",
             owner="Architect",
             expected_output="ADR-0001.md",
-            depends_on=["plan"],
+            depends_on=["scope_guard"],
         ),
         Task(
             id="scaffold",

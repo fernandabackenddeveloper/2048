@@ -10,6 +10,7 @@ from pathlib import Path
 from agent_factory.orchestrator.state_store import StateStore
 from agent_factory.orchestrator.planning import generate_plan
 from agent_factory.orchestrator.llm.adapter import LLMError, OpenAICompatibleAdapter
+from agent_factory.orchestrator.validators import validate_plan_schema
 
 
 class ChiefPlanner:
@@ -26,6 +27,9 @@ class ChiefPlanner:
 
     def plan(self) -> None:
         prompt = (self.run_dir / "inputs" / "input_prompt.md").read_text(encoding="utf-8")
+        source = "deterministic"
+        reason = "default"
+
         try:
             adapter = OpenAICompatibleAdapter(
                 api_key=os.getenv("OPENAI_API_KEY"),
@@ -37,18 +41,32 @@ class ChiefPlanner:
                 Path(__file__).resolve().parents[2] / "orchestrator" / "llm" / "prompts" / "planner.system.txt"
             )
             system_prompt = system_prompt_path.read_text(encoding="utf-8")
-            plan = adapter.generate_json(system_prompt, prompt)
+            llm_plan = adapter.generate_json(system_prompt, prompt)
+            llm_plan.setdefault("project", self.state_store.read_state(self.run_dir)["project"])
+            llm_plan.setdefault("stack", self.stack)
+            llm_plan.setdefault("created_at", self.state_store.utc_now())
 
-            if "milestones" not in plan or not isinstance(plan["milestones"], list):
-                raise LLMError("Missing milestones in plan")
-            source = "llm"
-        except Exception:
+            ok, msg = validate_plan_schema(Path(__file__).resolve().parents[2], llm_plan)
+            if ok:
+                plan = llm_plan
+                source = "llm"
+                reason = msg
+            else:
+                plan = generate_plan(
+                    prompt_text=prompt,
+                    project=self.state_store.read_state(self.run_dir)["project"],
+                    stack=self.stack,
+                )
+                source = "deterministic"
+                reason = msg
+        except Exception as e:
             plan = generate_plan(
                 prompt_text=prompt,
                 project=self.state_store.read_state(self.run_dir)["project"],
                 stack=self.stack,
             )
             source = "deterministic"
+            reason = f"LLM unavailable/invalid: {type(e).__name__}: {e}"
 
         (self.run_dir / "plan.json").write_text(json.dumps(plan, indent=2), encoding="utf-8")
         self.state_store.append_log(self.run_dir, "Plan created")
@@ -59,10 +77,11 @@ class ChiefPlanner:
                 "ts": self.state_store.utc_now(),
                 "event": "plan_generated",
                 "source": source,
-                "milestones": [m["id"] for m in plan.get("milestones", [])],
+                "reason": reason,
+                "milestones": [m.get("id") for m in plan.get("milestones", [])],
             },
         )
         state = self.state_store.read_state(self.run_dir)
-        state["current_gate"] = "architecture"
+        state["current_gate"] = "scope_guard"
         state["tasks"] = plan.get("milestones", [])
         self.state_store.save_state(self.run_dir, state)

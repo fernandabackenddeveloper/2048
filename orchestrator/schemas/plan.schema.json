@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Plan",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["project", "stack", "created_at", "definition_of_done", "milestones"],
+  "properties": {
+    "project": { "type": "string" },
+    "stack": { "type": "string" },
+    "created_at": { "type": "string" },
+    "definition_of_done": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "milestones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["id", "title", "features"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "required": ["id", "title", "tasks"],
+              "properties": {
+                "id": { "type": "string" },
+                "title": { "type": "string" },
+                "tasks": {
+                  "type": "array",
+                  "items": { "$ref": "task.schema.json" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
