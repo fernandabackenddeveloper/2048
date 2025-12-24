@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Literal, Optional
+from typing import Dict, Iterator, List, Literal, Optional, Tuple
 
 TaskStatus = Literal["pending", "in_progress", "completed", "failed"]
 
@@ -55,6 +55,13 @@ def build_default_tasks(project_name: str) -> List[Task]:
             depends_on=["architecture"],
         ),
         Task(
+            id="implement",
+            description="Fan-out implementation across tasks",
+            owner="Implementer",
+            expected_output="tasks executed in sandboxes",
+            depends_on=["scaffold"],
+        ),
+        Task(
             id="qa",
             description="Run lint/test smoke placeholder",
             owner="QA Agent",
@@ -76,3 +83,10 @@ def build_default_tasks(project_name: str) -> List[Task]:
             depends_on=["docs"],
         ),
     ]
+
+
+def iter_plan_tasks(plan: Dict[str, any]) -> Iterator[Tuple[Dict, Dict, Dict]]:
+    for milestone in plan.get("milestones", []):
+        for feature in milestone.get("features", []):
+            for task in feature.get("tasks", []):
+                yield milestone, feature, task

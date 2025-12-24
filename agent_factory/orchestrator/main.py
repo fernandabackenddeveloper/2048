@@ -13,6 +13,7 @@ from agent_factory.agents.chief_planner import ChiefPlanner
 from agent_factory.agents.architect import Architect
 from agent_factory.agents.scope_guard import ScopeGuard
 from agent_factory.agents.scaffolder import Scaffolder
+from agent_factory.agents.implementer import ImplementerAgent
 from agent_factory.agents.qa_agent import QAAgent
 from agent_factory.agents.docs_agent import DocsAgent
 from agent_factory.agents.release_agent import ReleaseAgent
@@ -62,6 +63,7 @@ def _build_agents(
     chief_planner = ChiefPlanner(run_dir, stack, state_store)
     architect = Architect(run_dir, stack, state_store)
     scaffolder = Scaffolder(run_dir, stack, state_store, config=config, dry_run=dry_run)
+    implementer = ImplementerAgent(run_dir, stack, state_store)
     qa_agent = QAAgent(run_dir, stack, state_store, dry_run=dry_run)
     docs_agent = DocsAgent(run_dir, stack, state_store)
     release_agent = ReleaseAgent(run_dir, stack, state_store, dry_run=dry_run)
@@ -72,6 +74,7 @@ def _build_agents(
         "plan": chief_planner.plan,
         "architecture": architect.compose_adr,
         "scaffold": scaffolder.scaffold,
+        "implement": implementer.run,
         "qa": qa_agent.run_suite,
         "docs": docs_agent.write_quickstart,
         "release": release_agent.prepare_report,
