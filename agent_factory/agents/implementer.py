@@ -12,6 +12,7 @@ from agent_factory.orchestrator.patching import PatchError, apply_patch, rollbac
 from agent_factory.orchestrator.state_store import StateStore
 from agent_factory.orchestrator.task_graph import iter_plan_tasks
 from agent_factory.orchestrator.llm.adapter import OpenAICompatibleAdapter
+from agent_factory.orchestrator.changes import diff_hashes, snapshot_hashes
 
 
 def run_pytest(path: Path) -> bool:
@@ -47,6 +48,7 @@ class ImplementerAgent:
         for t in tasks_iter:
             task_id = t.get("id")
             sandbox = create_sandbox(self.repo_root, self.state_store.read_state(self.run_dir)["project"], task_id)
+            before = snapshot_hashes(sandbox)
 
             if adapter is None:
                 t["status"] = "skipped"
@@ -91,9 +93,19 @@ class ImplementerAgent:
                 last_result = {"task": task_id, "status": "failed", "sandbox": str(sandbox), "stage": "code"}
                 continue
 
+            after = snapshot_hashes(sandbox)
+            changes = diff_hashes(before, after)
+
+            manifest_path = sandbox / "runs" / self.state_store.read_state(self.run_dir)["project"] / "artifacts"
+            manifest_path.mkdir(parents=True, exist_ok=True)
+            (manifest_path / f"changes_{task_id}.json").write_text(
+                json.dumps(changes, indent=2),
+                encoding="utf-8",
+            )
+
             t["status"] = "ready_to_merge"
             self._log(task_id, sandbox, "ready_to_merge", "ready_to_merge")
-            last_result = {"task": task_id, "status": "ready_to_merge", "sandbox": str(sandbox)}
+            last_result = {"task": task_id, "status": "ready_to_merge", "sandbox": str(sandbox), "changes": changes}
 
         plan_path.write_text(json.dumps(plan, indent=2), encoding="utf-8")
         state = self.state_store.read_state(self.run_dir)

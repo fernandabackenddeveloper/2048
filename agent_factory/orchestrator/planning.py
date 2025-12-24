@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 from typing import Any, Dict, List
+import re
 
 
 def utc_now() -> str:
@@ -16,7 +17,24 @@ def _task(tid: str, desc: str, expected: str, dod: List[str], owner: str) -> Dic
         "dod": dod,
         "owner": owner,
         "status": "todo",
+        "touch_hints": infer_touch_hints(desc),
     }
+
+
+def infer_touch_hints(task_desc: str) -> List[str]:
+    s = task_desc.lower()
+    hints: List[str] = []
+    if "test" in s or "pytest" in s:
+        hints.append("tests/")
+    if "readme" in s or "docs" in s:
+        hints.append("docs/")
+    if "docker" in s:
+        hints.append("Dockerfile")
+    if "ci" in s or "github actions" in s:
+        hints.append("ci/")
+    if "orchestrator" in s:
+        hints.append("orchestrator/")
+    return hints
 
 
 def detect_capabilities(prompt_text: str) -> Dict[str, bool]:

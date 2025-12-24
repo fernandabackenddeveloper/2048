@@ -17,8 +17,11 @@ from agent_factory.agents.implementer import ImplementerAgent
 from agent_factory.agents.qa_agent import QAAgent
 from agent_factory.agents.docs_agent import DocsAgent
 from agent_factory.agents.release_agent import ReleaseAgent
-from agent_factory.orchestrator.pool import run_pool
+from agent_factory.orchestrator.pool_process import run_process_pool, schedule_batches
+from agent_factory.orchestrator.merge_lock import MergeLock
 from agent_factory.orchestrator.sandbox import merge_sandbox
+from agent_factory.orchestrator.changes import changed_files
+from agent_factory.orchestrator.worker import implement_task_worker
 
 
 def run_pipeline(
@@ -93,40 +96,67 @@ def _fan_out(run_dir: Path, implementer: ImplementerAgent, state_store: StateSto
         if task.get("status") == "todo":
             todo_tasks.append(task)
 
-    max_workers = int(config.get("implementer_pool", {}).get("max_workers", 2))
+    # Heuristic touch hints
+    for t in todo_tasks:
+        owner = (t.get("owner") or "")
+        if owner == "docs":
+            t["touch_hints"] = list(set((t.get("touch_hints") or []) + ["docs/"]))
+        elif owner == "qa":
+            t["touch_hints"] = list(set((t.get("touch_hints") or []) + ["tests/"]))
+        elif owner == "scaffolder":
+            t["touch_hints"] = list(set((t.get("touch_hints") or []) + ["orchestrator/", "ci/", "Dockerfile", "Makefile"]))
+        else:
+            t["touch_hints"] = t.get("touch_hints") or []
 
-    def _work(t: Dict[str, Any]) -> Dict[str, Any]:
-        return implementer.run(t)
-
-    pool_results = run_pool(todo_tasks, _work, max_workers=max_workers)
+    batches = schedule_batches(todo_tasks)
     state_store.append_jsonl(
         run_dir,
         "logs/pool.jsonl",
-        {
-            "ts": state_store.utc_now(),
-            "event": "pool_completed",
-            "max_workers": max_workers,
-            "results": [r.result for r in pool_results],
-        },
+        {"ts": state_store.utc_now(), "event": "batches_scheduled", "batches": [[t["id"] for t in b] for b in batches]},
     )
 
-    res_by_id = {r.task_id: r.result for r in pool_results}
-    from pathlib import Path as _P
+    max_workers = int(config.get("implementer_pool", {}).get("max_workers", 2))
+    lock = MergeLock(lockfile=run_dir / "locks" / "merge.lock")
+    merged_files = set()
 
-    for _, _, task in iter_plan_tasks(plan):
-        tid = task["id"]
-        if tid not in res_by_id:
-            continue
-        result = res_by_id[tid]
-        status = result.get("status")
-        if status == "ready_to_merge":
-            sandbox_path = _P(result["sandbox"])
-            merge_sandbox(Path("."), sandbox_path)
-            task["status"] = "done"
-        elif status == "skipped":
-            task["status"] = "skipped"
-        else:
-            task["status"] = "failed"
+    def _work(t: Dict[str, Any]) -> Dict[str, Any]:
+        args = {
+            "repo_root": str(Path(".").resolve()),
+            "runs_dir": str(run_dir.parent),
+            "project": run_dir.name,
+            "stack": t.get("owner", "web_fullstack"),
+            "task": t,
+        }
+        return implement_task_worker(args)
+
+    all_results = []
+    for batch in batches:
+        batch_results = run_process_pool(batch, _work, max_workers=max_workers)
+        all_results.extend(batch_results)
+
+        res_by_id = {r.task_id: r.result for r in batch_results}
+        for _, _, task in iter_plan_tasks(plan):
+            tid = task["id"]
+            if tid not in res_by_id:
+                continue
+            result = res_by_id[tid]
+            status = result.get("status")
+            if status == "ready_to_merge":
+                change_set = changed_files(result.get("changes", {}))
+                if merged_files & change_set:
+                    task["status"] = "failed"
+                    continue
+                lock.acquire()
+                try:
+                    merge_sandbox(Path("."), Path(result["sandbox"]))
+                    merged_files |= change_set
+                    task["status"] = "done"
+                finally:
+                    lock.release()
+            elif status == "skipped":
+                task["status"] = "skipped"
+            else:
+                task["status"] = "failed"
 
     plan_path.write_text(json.dumps(plan, indent=2), encoding="utf-8")
     state = state_store.read_state(run_dir)
