@@ -1,0 +1,30 @@
+name: web_fullstack
+language: python
+allowlist:
+  - python
+  - pytest
+  - pip
+  - git
+  - rg
+  - gh
+  - gitleaks
+  - syft
+  - trivy
+  - docker
+docker_runner:
+  image: "agent-factory/runner-web_fullstack:0.1.0"
+stack: web_fullstack
+commands:
+  - node
+  - npm
+  - python
+templates:
+  - template/package.json
+  - template/README.md
+lint:
+  - npm run lint
+tests:
+  - npm test
+conventions:
+  naming: snake_case
+  tests: pytest

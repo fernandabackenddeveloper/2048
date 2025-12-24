@@ -1,0 +1,17 @@
+gates:
+  commands:
+    - name: pytest
+      cmd: ["pytest", "-q"]
+      cwd: "."
+      max_attempts: 1
+    - name: secret_scan
+      cmd: ["gitleaks", "detect", "--no-banner", "--source", ".", "--exit-code", "1"]
+      cwd: "."
+      fix_suggestions:
+        - "Remove secrets from repo and rotate compromised keys"
+    - name: sbom
+      cmd: ["syft", ".", "-o", "cyclonedx-json={RUN_REPORTS_DIR}/sbom.cdx.json"]
+      cwd: "."
+    - name: vuln_scan
+      cmd: ["trivy", "fs", ".", "--exit-code", "1", "--severity", "CRITICAL,HIGH"]
+      cwd: "."

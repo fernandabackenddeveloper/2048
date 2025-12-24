@@ -1,0 +1,133 @@
+capabilities:
+  core_orchestrator:
+    tags: ["orchestrator", "planning", "state", "routing"]
+    director: DirectorAgent
+    squad: SquadAgent
+    docker_image: agent-factory/runner-web_fullstack:0.1.0
+    concurrency: 2
+    budget:
+      max_tasks_inflight: 10
+      max_fix_attempts: 6
+  ui_dashboard:
+    tags: ["ui", "dashboard", "frontend", "html"]
+    director: DirectorAgent
+    squad: SquadAgent
+    docker_image: agent-factory/runner-web_fullstack:0.1.0
+    concurrency: 2
+    budget:
+      max_tasks_inflight: 8
+      max_fix_attempts: 4
+  rendering_3d:
+    tags: ["renderer", "shaders", "scene", "gpu"]
+    director: DirectorAgent
+    squad: SquadAgent
+    docker_image: agent-factory/runner-godot_desktop:0.1.0
+    concurrency: 1
+    budget:
+      max_tasks_inflight: 6
+      max_fix_attempts: 6
+  import_pipeline:
+    tags: ["fbx", "gltf", "obj", "import", "assets"]
+    director: DirectorAgent
+    squad: SquadAgent
+    docker_image: agent-factory/runner-web_fullstack:0.1.0
+    concurrency: 2
+    budget:
+      max_tasks_inflight: 10
+      max_fix_attempts: 6
+  core_orchestrator_fc5f601a:
+    tags:
+      - core
+      - orchestrator
+    director: DirectorAgent
+    squad: CoreOrchestratorAgent
+    docker_image: agent-factory/runner-web_fullstack:0.1.0
+    concurrency: 1
+    budget:
+      max_tasks_inflight: 6
+      max_fix_attempts: 6
+    boundaries:
+      - core/
+      - orchestrator/
+      - docs/
+      - tests/
+  core_tools_607797c0:
+    tags:
+      - core
+      - tools
+    director: DirectorAgent
+    squad: CoreToolsAgent
+    docker_image: agent-factory/runner-web_fullstack:0.1.0
+    concurrency: 1
+    budget:
+      max_tasks_inflight: 6
+      max_fix_attempts: 6
+    boundaries:
+      - core/
+      - tools/
+      - docs/
+      - tests/
+  core_qa_e8955136:
+    tags:
+      - core
+      - qa
+    director: DirectorAgent
+    squad: CoreQaAgent
+    docker_image: agent-factory/runner-web_fullstack:0.1.0
+    concurrency: 1
+    budget:
+      max_tasks_inflight: 6
+      max_fix_attempts: 6
+    boundaries:
+      - core/
+      - qa/
+      - docs/
+      - tests/
+  core_plugin_system_20c795a6:
+    tags:
+      - core
+      - plugin_system
+    director: DirectorAgent
+    squad: CorePluginSystemAgent
+    docker_image: agent-factory/runner-web_fullstack:0.1.0
+    concurrency: 1
+    budget:
+      max_tasks_inflight: 6
+      max_fix_attempts: 6
+    boundaries:
+      - core/
+      - plugin_system/
+      - docs/
+      - tests/
+  ui_dashboard_babe567a:
+    tags:
+      - ui
+      - dashboard
+    director: DirectorAgent
+    squad: UiDashboardAgent
+    docker_image: agent-factory/runner-web_fullstack:0.1.0
+    concurrency: 1
+    budget:
+      max_tasks_inflight: 6
+      max_fix_attempts: 6
+    boundaries:
+      - ui/
+      - dashboard/
+      - docs/
+      - tests/
+  release_publisher_930024fd:
+    tags:
+      - release
+      - publisher
+    director: DirectorAgent
+    squad: ReleasePublisherAgent
+    docker_image: agent-factory/runner-web_fullstack:0.1.0
+    concurrency: 1
+    budget:
+      max_tasks_inflight: 6
+      max_fix_attempts: 6
+    boundaries:
+      - release/
+      - publisher/
+      - docs/
+      - tests/

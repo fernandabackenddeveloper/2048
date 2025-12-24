@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Agent Factory Dashboard</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 24px; }
+    .grid { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 12px; }
+    .muted { color: #666; font-size: 12px; }
+    .ok { color: #0a7; font-weight: 700; }
+    .bad { color: #c22; font-weight: 700; }
+    pre { white-space: pre-wrap; background: #fafafa; padding: 12px; border-radius: 12px; border: 1px solid #eee; }
+    button { padding: 8px 10px; border-radius: 10px; border: 1px solid #ddd; background: white; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Agent Factory Dashboard</h1>
+  <p class="muted">Runs from <code>runs/</code></p>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Projects</h3>
+      <div id="runs"></div>
+    </div>
+    <div class="card">
+      <h3>Details</h3>
+      <div id="details" class="muted">Select a project</div>
+    </div>
+  </div>
+
+<script>
+async function loadRuns(){
+  const res = await fetch('/api/runs');
+  const runs = await res.json();
+  const el = document.getElementById('runs');
+  el.innerHTML = '';
+  runs.forEach(r => {
+    const status = (r.final && r.final.status) || 'unknown';
+    const cls = status === 'success' ? 'ok' : (status === 'partial' ? 'bad' : 'muted');
+    const btn = document.createElement('button');
+    btn.textContent = `${r.project} — ${status}`;
+    btn.className = cls;
+    btn.onclick = () => loadRun(r.project);
+    el.appendChild(btn);
+    el.appendChild(document.createElement('div'));
+  })
+}
+
+async function loadRun(project){
+  const res = await fetch('/api/run/' + project);
+  const data = await res.json();
+  const sand = await loadSandboxes(project);
+  document.getElementById('details').innerHTML =
+    `<div class="muted">Project: <b>${project}</b></div>
+     <h4>Final report</h4>
+     <pre>${JSON.stringify(data.final, null, 2)}</pre>
+     <h4>State</h4>
+     <pre>${JSON.stringify(data.state, null, 2)}</pre>
+     <h4>Plan</h4>
+     <pre>${JSON.stringify(data.plan, null, 2)}</pre>
+     ${sand}`;
+}
+
+async function loadSandboxes(project){
+  const res = await fetch(`/api/run/${project}/sandboxes`);
+  const items = await res.json();
+  let html = `<h4>Sandboxes</h4>`;
+  items.forEach(x => {
+    html += `<div style="margin-bottom:10px">
+      <b>${x.task}</b><br/>
+      ${x.artifacts.tests_diff ? `<a href="/api/diff/${project}/${x.task}/tests" target="_blank">tests diff</a>` : "no tests diff"} |
+      ${x.artifacts.code_diff ? `<a href="/api/diff/${project}/${x.task}/code" target="_blank">code diff</a>` : "no code diff"} |
+      ${x.artifacts.changes ? `<a href="/api/diff/${project}/${x.task}/changes" target="_blank">changes</a>` : "no changes"}
+    </div>`;
+  });
+  return html;
+}
+
+loadRuns();
+</script>
+</body>
+</html>

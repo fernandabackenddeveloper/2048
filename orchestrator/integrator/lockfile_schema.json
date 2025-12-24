@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["owner", "integrator", "modules"],
+  "properties": {
+    "owner": { "type": "string" },
+    "integrator": { "type": "string" },
+    "generated_at": { "type": "string" },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "repo", "version", "ref"],
+        "properties": {
+          "name": { "type": "string" },
+          "repo": { "type": "string" },
+          "version": { "type": "string" },
+          "ref": { "type": "string" }
+        }
+      }
+    }
+  }
+}

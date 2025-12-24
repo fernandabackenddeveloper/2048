@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "required": ["name", "version", "endpoints", "compatibility"],
+  "properties": {
+    "name": { "type": "string" },
+    "version": { "type": "string" },
+    "endpoints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "input", "output"],
+        "properties": {
+          "name": { "type": "string" },
+          "input": { "type": "string" },
+          "output": { "type": "string" }
+        }
+      }
+    },
+    "compatibility": { "type": "string" }
+  }
+}

@@ -1,0 +1,26 @@
+model_provider: "openai-compatible"
+default_stack: "web_fullstack"
+sandbox:
+  allow_commands:
+    - python
+    - pytest
+    - node
+    - npm
+    - git
+run_root: "runs"
+stack_root: "stacks"
+logging:
+  level: "INFO"
+publisher:
+  github:
+    enabled: true
+    owner: "change-me"
+    repo_visibility: "private"
+    default_branch: "main"
+    remote_name: "origin"
+    release:
+      enabled: true
+tooling:
+  docker:
+    enabled: true
+    image: agent-factory/runner-base:0.1.0

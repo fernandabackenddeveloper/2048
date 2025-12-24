@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["project", "owner", "integrator_repo", "modules"],
+  "properties": {
+    "project": { "type": "string" },
+    "owner": { "type": "string" },
+    "integrator_repo": { "type": "string" },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "repo", "domains", "stack", "docker_image"],
+        "properties": {
+          "name": { "type": "string" },
+          "repo": { "type": "string" },
+          "domains": { "type": "array", "items": { "type": "string" } },
+          "stack": { "type": "string" },
+          "docker_image": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Task",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["id", "description", "expected_output", "dod", "owner", "status"],
+  "properties": {
+    "id": { "type": "string" },
+    "description": { "type": "string" },
+    "expected_output": { "type": "string" },
+    "dod": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "owner": {
+      "type": "string",
+      "enum": ["scaffolder", "qa", "fixer", "docs", "release"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["todo"]
+    },
+    "depends_on": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}
