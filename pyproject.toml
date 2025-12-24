@@ -18,6 +18,9 @@ dev = [
 pythonpath = [
   "agent_factory",
 ]
+norecursedirs = [
+  "runs",
+]
 
 [tool.setuptools.packages.find]
 include = ["agent_factory*", "orchestrator*"]

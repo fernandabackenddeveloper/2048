@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from agent_factory.orchestrator.sandbox import create_sandbox, merge_sandbox
+from agent_factory.orchestrator.sandbox import create_sandbox
 from agent_factory.orchestrator.patching import PatchError, apply_patch, rollback, snapshot
 from agent_factory.orchestrator.state_store import StateStore
 from agent_factory.orchestrator.task_graph import iter_plan_tasks
@@ -42,6 +42,7 @@ class ImplementerAgent:
             )
 
         tasks_iter = [task] if task else [t for _, _, t in iter_plan_tasks(plan)]
+        last_result: Optional[Dict[str, Any]] = None
 
         for t in tasks_iter:
             task_id = t.get("id")
@@ -50,6 +51,7 @@ class ImplementerAgent:
             if adapter is None:
                 t["status"] = "skipped"
                 self._log(task_id, sandbox, "skipped", "No LLM configured")
+                last_result = {"task": task_id, "status": "skipped", "sandbox": str(sandbox), "reason": "No LLM configured"}
                 continue
 
             ctx = json.dumps({"task": t}, indent=2)
@@ -68,6 +70,7 @@ class ImplementerAgent:
                 rollback(snap_tests, sandbox)
                 t["status"] = "failed"
                 self._log(task_id, sandbox, "failed", "tests")
+                last_result = {"task": task_id, "status": "failed", "sandbox": str(sandbox), "stage": "tests"}
                 continue
 
             # 2) Generate code
@@ -85,16 +88,18 @@ class ImplementerAgent:
                 rollback(snap_code, sandbox)
                 t["status"] = "failed"
                 self._log(task_id, sandbox, "failed", "code")
+                last_result = {"task": task_id, "status": "failed", "sandbox": str(sandbox), "stage": "code"}
                 continue
 
-            merge_sandbox(self.repo_root, sandbox)
-            t["status"] = "done"
-            self._log(task_id, sandbox, "done", "merged")
+            t["status"] = "ready_to_merge"
+            self._log(task_id, sandbox, "ready_to_merge", "ready_to_merge")
+            last_result = {"task": task_id, "status": "ready_to_merge", "sandbox": str(sandbox)}
 
         plan_path.write_text(json.dumps(plan, indent=2), encoding="utf-8")
         state = self.state_store.read_state(self.run_dir)
         state["tasks"] = plan.get("milestones", [])
         self.state_store.save_state(self.run_dir, state)
+        return last_result or {"task": task.get("id") if task else None, "status": "skipped"}
 
     def _log(self, task_id: str, sandbox: Path, status: str, detail: str) -> None:
         self.state_store.append_jsonl(

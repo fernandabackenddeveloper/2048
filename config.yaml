@@ -11,3 +11,5 @@ sandbox:
     - git
 logging:
   level: "INFO"
+implementer_pool:
+  max_workers: 2

@@ -4,11 +4,11 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from agent_factory.orchestrator.router import TaskRouter
 from agent_factory.orchestrator.state_store import StateStore
-from agent_factory.orchestrator.task_graph import Task, build_default_tasks
+from agent_factory.orchestrator.task_graph import Task, build_default_tasks, iter_plan_tasks
 from agent_factory.agents.chief_planner import ChiefPlanner
 from agent_factory.agents.architect import Architect
 from agent_factory.agents.scope_guard import ScopeGuard
@@ -17,6 +17,8 @@ from agent_factory.agents.implementer import ImplementerAgent
 from agent_factory.agents.qa_agent import QAAgent
 from agent_factory.agents.docs_agent import DocsAgent
 from agent_factory.agents.release_agent import ReleaseAgent
+from agent_factory.orchestrator.pool import run_pool
+from agent_factory.orchestrator.sandbox import merge_sandbox
 
 
 def run_pipeline(
@@ -74,11 +76,62 @@ def _build_agents(
         "plan": chief_planner.plan,
         "architecture": architect.compose_adr,
         "scaffold": scaffolder.scaffold,
-        "implement": implementer.run,
+        "implement": lambda: _fan_out(run_dir, implementer, state_store, config),
         "qa": qa_agent.run_suite,
         "docs": docs_agent.write_quickstart,
         "release": release_agent.prepare_report,
     }
+
+def _fan_out(run_dir: Path, implementer: ImplementerAgent, state_store: StateStore, config: Dict) -> None:
+    plan_path = run_dir / "plan.json"
+    if not plan_path.exists():
+        return
+    plan = json.loads(plan_path.read_text(encoding="utf-8"))
+
+    todo_tasks = []
+    for _, _, task in iter_plan_tasks(plan):
+        if task.get("status") == "todo":
+            todo_tasks.append(task)
+
+    max_workers = int(config.get("implementer_pool", {}).get("max_workers", 2))
+
+    def _work(t: Dict[str, Any]) -> Dict[str, Any]:
+        return implementer.run(t)
+
+    pool_results = run_pool(todo_tasks, _work, max_workers=max_workers)
+    state_store.append_jsonl(
+        run_dir,
+        "logs/pool.jsonl",
+        {
+            "ts": state_store.utc_now(),
+            "event": "pool_completed",
+            "max_workers": max_workers,
+            "results": [r.result for r in pool_results],
+        },
+    )
+
+    res_by_id = {r.task_id: r.result for r in pool_results}
+    from pathlib import Path as _P
+
+    for _, _, task in iter_plan_tasks(plan):
+        tid = task["id"]
+        if tid not in res_by_id:
+            continue
+        result = res_by_id[tid]
+        status = result.get("status")
+        if status == "ready_to_merge":
+            sandbox_path = _P(result["sandbox"])
+            merge_sandbox(Path("."), sandbox_path)
+            task["status"] = "done"
+        elif status == "skipped":
+            task["status"] = "skipped"
+        else:
+            task["status"] = "failed"
+
+    plan_path.write_text(json.dumps(plan, indent=2), encoding="utf-8")
+    state = state_store.read_state(run_dir)
+    state["tasks"] = plan.get("milestones", [])
+    state_store.save_state(run_dir, state)
 
 
 def parse_args() -> argparse.Namespace:
