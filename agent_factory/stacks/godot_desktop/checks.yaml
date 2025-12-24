@@ -1,0 +1,5 @@
+gates:
+  - name: build
+    description: "Ensure Godot project opens headless"
+  - name: tests
+    description: "Run pytest-based smoke checks"

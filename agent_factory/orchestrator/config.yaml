@@ -1,0 +1,11 @@
+model_provider: "openai-compatible"
+default_stack: "web_fullstack"
+sandbox:
+  allow_commands:
+    - python
+    - pytest
+    - node
+    - npm
+    - git
+logging:
+  level: "INFO"

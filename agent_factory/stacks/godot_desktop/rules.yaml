@@ -1,0 +1,10 @@
+stack: godot_desktop
+commands:
+  - godot
+  - python
+templates:
+  - template/project.godot
+lint:
+  - godot --headless --check-only
+tests:
+  - python -m pytest

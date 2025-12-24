@@ -1,0 +1,12 @@
+stack: web_fullstack
+commands:
+  - node
+  - npm
+  - python
+templates:
+  - template/package.json
+  - template/README.md
+lint:
+  - npm run lint
+tests:
+  - npm test

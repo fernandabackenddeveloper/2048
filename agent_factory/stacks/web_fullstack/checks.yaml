@@ -1,0 +1,7 @@
+gates:
+  - name: lint
+    description: "Run npm lint"
+  - name: test
+    description: "Execute npm test"
+  - name: smoke
+    description: "Start dev server in CI-friendly mode"
