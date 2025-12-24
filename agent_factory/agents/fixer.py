@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import json
+import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List
 
+from agent_factory.orchestrator.patching import PatchError, apply_patch, rollback, snapshot
 from agent_factory.orchestrator.state_store import StateStore
+from agent_factory.orchestrator.llm.adapter import OpenAICompatibleAdapter
 
 
 @dataclass
@@ -17,11 +21,58 @@ class FixerAgent:
 
     def run(self, failing_gates: List[Dict[str, Any]]) -> None:
         """
-        Rule-based fixer:
-        - Detect common pytest errors
-        - Apply minimal patches (file creation / import fixes)
-        - Log every action with diff-like notes
+        LLM-powered fixer with deterministic fallback.
+        - If no API key, fallback to rule-based fixer.
+        - Otherwise request a unified diff, apply in sandbox, rollback on failure.
         """
+        if not os.getenv("OPENAI_API_KEY"):
+            self._rule_based(failing_gates)
+            return
+
+        adapter = OpenAICompatibleAdapter(
+            api_key=os.getenv("OPENAI_API_KEY"),
+            base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+        )
+
+        system_prompt = (
+            self.repo_root
+            / "orchestrator"
+            / "llm"
+            / "prompts"
+            / "fixer.system.txt"
+        ).read_text(encoding="utf-8")
+
+        context = {"gates": failing_gates}
+        diff = adapter.generate_text(system_prompt=system_prompt, user_prompt=json.dumps(context, indent=2))
+
+        if not diff.strip():
+            return
+
+        snap = snapshot(self.repo_root)
+        try:
+            apply_patch(self.repo_root, diff)
+            self.state_store.append_jsonl(
+                self.run_dir,
+                "logs/fixer.jsonl",
+                {
+                    "ts": self.state_store.utc_now(),
+                    "event": "llm_patch_applied",
+                },
+            )
+        except PatchError as e:
+            rollback(snap, self.repo_root)
+            self.state_store.append_jsonl(
+                self.run_dir,
+                "logs/fixer.jsonl",
+                {
+                    "ts": self.state_store.utc_now(),
+                    "event": "llm_patch_failed",
+                    "error": str(e),
+                },
+            )
+
+    def _rule_based(self, failing_gates: List[Dict[str, Any]]) -> None:
         applied: List[str] = []
 
         for gate in failing_gates:

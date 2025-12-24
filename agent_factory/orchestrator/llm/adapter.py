@@ -48,3 +48,33 @@ class OpenAICompatibleAdapter:
             return json.loads(content)
         except Exception:
             raise LLMError("Model did not return valid JSON")
+
+    def generate_text(self, system_prompt: str, user_prompt: str) -> str:
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            "temperature": 0.2,
+        }
+
+        req = urllib.request.Request(
+            f"{self.base_url}/chat/completions",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self.api_key}",
+            },
+        )
+
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                data = json.loads(r.read().decode("utf-8"))
+        except Exception as e:  # pragma: no cover - network errors handled in runtime
+            raise LLMError(str(e))
+
+        try:
+            return data["choices"][0]["message"]["content"]
+        except Exception:
+            raise LLMError("Model did not return text content")
