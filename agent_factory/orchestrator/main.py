@@ -20,8 +20,9 @@ from agent_factory.agents.release_agent import ReleaseAgent
 from agent_factory.orchestrator.pool_process import run_process_pool, schedule_batches
 from agent_factory.orchestrator.merge_lock import MergeLock
 from agent_factory.orchestrator.sandbox import merge_sandbox
-from agent_factory.orchestrator.changes import changed_files
 from agent_factory.orchestrator.worker import implement_task_worker
+from agent_factory.orchestrator.dag import topo_sort
+from agent_factory.orchestrator.conflicts import has_conflict
 
 
 def run_pipeline(
@@ -96,6 +97,8 @@ def _fan_out(run_dir: Path, implementer: ImplementerAgent, state_store: StateSto
         if task.get("status") == "todo":
             todo_tasks.append(task)
 
+    todo_tasks = topo_sort(todo_tasks)
+
     # Heuristic touch hints
     for t in todo_tasks:
         owner = (t.get("owner") or "")
@@ -117,7 +120,12 @@ def _fan_out(run_dir: Path, implementer: ImplementerAgent, state_store: StateSto
 
     max_workers = int(config.get("implementer_pool", {}).get("max_workers", 2))
     lock = MergeLock(lockfile=run_dir / "locks" / "merge.lock")
-    merged_files = set()
+    merged: Dict[str, list] = {"created": [], "deleted": [], "modified": []}
+
+    def merge_union(base: Dict[str, list], inc: Dict[str, list]) -> Dict[str, list]:
+        for k in ["created", "deleted", "modified"]:
+            base[k] = sorted(list(set(base[k]) | set(inc.get(k, []))))
+        return base
 
     def _work(t: Dict[str, Any]) -> Dict[str, Any]:
         args = {
@@ -142,14 +150,24 @@ def _fan_out(run_dir: Path, implementer: ImplementerAgent, state_store: StateSto
             result = res_by_id[tid]
             status = result.get("status")
             if status == "ready_to_merge":
-                change_set = changed_files(result.get("changes", {}))
-                if merged_files & change_set:
-                    task["status"] = "failed"
+                if has_conflict(merged, result.get("changes", {})):
+                    task["status"] = "blocked"
+                    state_store.append_jsonl(
+                        run_dir,
+                        "logs/conflicts.jsonl",
+                        {
+                            "ts": state_store.utc_now(),
+                            "task": tid,
+                            "event": "merge_blocked_overlap",
+                            "changes": result.get("changes", {}),
+                        },
+                    )
                     continue
+                repo_root = Path(".").resolve()
                 lock.acquire()
                 try:
-                    merge_sandbox(Path("."), Path(result["sandbox"]))
-                    merged_files |= change_set
+                    merge_sandbox(repo_root, Path(result["sandbox"]))
+                    merged = merge_union(merged, result.get("changes", {}))
                     task["status"] = "done"
                 finally:
                     lock.release()
