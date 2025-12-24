@@ -1,0 +1,15 @@
+model_provider: "openai-compatible"
+default_stack: "web_fullstack"
+run_root: "runs"
+stack_root: "stacks"
+sandbox:
+  allow_commands:
+    - python
+    - pytest
+    - node
+    - npm
+    - git
+logging:
+  level: "INFO"
+implementer_pool:
+  max_workers: 2

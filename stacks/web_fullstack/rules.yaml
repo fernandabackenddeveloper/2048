@@ -1,0 +1,23 @@
+name: web_fullstack
+language: python
+allowlist:
+  - python
+  - pytest
+  - pip
+  - git
+  - rg
+stack: web_fullstack
+commands:
+  - node
+  - npm
+  - python
+templates:
+  - template/package.json
+  - template/README.md
+lint:
+  - npm run lint
+tests:
+  - npm test
+conventions:
+  naming: snake_case
+  tests: pytest

@@ -1,0 +1,17 @@
+# Python cache
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+runs/
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store

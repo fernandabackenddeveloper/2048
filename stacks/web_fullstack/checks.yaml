@@ -1,0 +1,5 @@
+checks:
+  - name: pytest
+    description: "Run pytest suite"
+    command: "pytest -q"
+    max_attempts: 6

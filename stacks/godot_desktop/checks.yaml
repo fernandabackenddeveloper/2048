@@ -1,0 +1,9 @@
+checks:
+  - name: godot-headless
+    description: "Ensure Godot project opens headless"
+    command: "godot --headless --check-only"
+    max_attempts: 3
+  - name: pytest
+    description: "Run pytest-based smoke checks"
+    command: "pytest -q"
+    max_attempts: 3
